@@ -5,18 +5,18 @@
         "package": "QQApi",
         "repositoryURL": "https://github.com/ze230123/QQApi.git",
         "state": {
-          "branch": "main",
+          "branch": null,
           "revision": "f8d0d573aebca3c85d1e2f53cfdd6fb7ac9b1586",
-          "version": null
+          "version": "1.0.0"
         }
       },
       {
         "package": "WXApi",
         "repositoryURL": "https://github.com/ze230123/WXApi.git",
         "state": {
-          "branch": "main",
-          "revision": "154d6f783ac7d0a1813b8edc1dabc5fc3958da4c",
-          "version": null
+          "branch": null,
+          "revision": "3b059ad45bfaf9bf128b03ab0ff56eebe9198e2a",
+          "version": "1.0.0"
         }
       }
     ]

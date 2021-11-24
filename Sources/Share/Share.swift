@@ -3,6 +3,8 @@ import UIKit
 import WXApi
 import QQApi
 
+public typealias WXApiManager = WXApi.WXApiManager
+
 public enum ShareResult {
     case success
     case failure
@@ -15,7 +17,7 @@ enum ShareError: Error {
 }
 
 public class Share {
-    static func registerApp(wxCongigure: WXConfiguration, qqAppId: String) {
+    public static func registerApp(wxCongigure: WXConfiguration, qqAppId: String) {
         WXApiManager.register(for: wxCongigure)
         QQApi.register(for: qqAppId)
     }
@@ -36,7 +38,7 @@ public class Share {
                 }
             case .wxTimeline:
                     let image = try request.image.asImage()
-                    let request = WXApi.friendRequest(url: request.url, title: request.title, description: request.description, image: image)
+                    let request = WXApi.timelineRequest(url: request.url, title: request.title, description: request.description, image: image)
                     WXApiManager.share(request) { result in
                         switch result {
                         case .success:
@@ -76,9 +78,9 @@ public class Share {
 
     public static func send(_ request: Share.MiniProgramRequest, complation: ((ShareResult) -> Void)?) {
         do {
-            let image = try request.image?.asImage()
-            let request = WXApi.miniRequest(path: request.path, userName: request.username, title: request.title, description: request.description, image: image)
-            WXApiManager.share(request) { reuslt in
+            let image = try request.image.asImage()
+            let req = WXApi.miniRequest(path: request.path, userName: request.username, title: request.title, description: request.description, image: image)
+            WXApiManager.share(req) { reuslt in
                 switch reuslt {
                 case .success:
                     complation?(.success)
@@ -91,17 +93,29 @@ public class Share {
             complation?(.failure)
         }
     }
+
+    public static func send(_ request: Share.LaunchMiniRequest) {
+        let req = WXApi.launchMiniRequest(path: request.path, userName: request.username)
+        WXApiManager.share(req, complation: nil)
+    }
+
+    public static func handleOpenURL(_ url: URL) -> Bool {
+        _ = QQApi.handleOpen(url)
+        _ = WXApiManager.handleOpen(url)
+        return true
+    }
 }
 
-public extension Share {
-    enum Platform {
+extension Share {
+    public enum Platform {
         case wxFriend
         case wxTimeline
         case qqFriend
         case qZone
     }
 
-    struct Request {
+    /// QQ、微信常规分享模型
+    public struct Request {
         var platform: Share.Platform
         /// 消息标题
         var title: String
@@ -111,23 +125,50 @@ public extension Share {
         var url: String
         /// 缩略图
         var image: ShareImage
+
+        public init(platform: Share.Platform, url: String, image: ShareImage, title: String, description: String) {
+            self.platform = platform
+            self.url = url
+            self.image = image
+            self.title = title
+            self.description = description
+        }
     }
 
-    struct MiniProgramRequest {
+    /// 微信小程序分享模型
+    public struct MiniProgramRequest {
         /// 小程序的页面路径
         var path: String
         /// 小程序的userName
         var username: String
         /// 小程序新版本的预览图
-        var image: ShareImage?
+        var image: ShareImage
         /// 消息标题
         var title: String
         /// 描述内容
         var description: String
+
+        public init(path: String, username: String, image: ShareImage, title: String, description: String) {
+            self.path = path
+            self.username = username
+            self.image = image
+            self.title = title
+            self.description = description
+        }
+    }
+
+    public struct LaunchMiniRequest {
+        var path: String
+        var username: String
+
+        public init(path: String, username: String) {
+            self.path = path
+            self.username = username
+        }
     }
 }
 
-enum ShareImage {
+public enum ShareImage {
     case image(UIImage?)
     case url(String)
 }
