@@ -79,7 +79,7 @@ public class Share {
     public static func send(_ request: Share.MiniProgramRequest, complation: ((ShareResult) -> Void)?) {
         do {
             let image = try request.image.asImage()
-            let req = WXApi.miniRequest(path: request.path, userName: request.username, title: request.title, description: request.description, image: image)
+            let req = WXApi.miniRequest(path: request.path, userName: request.username, title: request.title, description: request.description, image: image, type: request.type)
             WXApiManager.share(req) { reuslt in
                 switch reuslt {
                 case .success:
@@ -148,12 +148,16 @@ extension Share {
         /// 描述内容
         var description: String
 
-        public init(path: String, username: String, image: ShareImage, title: String, description: String) {
+        /// 小程序版本
+        var type: WXApi.ProgramType
+
+        public init(path: String, username: String, image: ShareImage, title: String, description: String, type: WXApi.ProgramType = .release) {
             self.path = path
             self.username = username
             self.image = image
             self.title = title
             self.description = description
+            self.type = type
         }
     }
 
