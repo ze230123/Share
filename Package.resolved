@@ -9,15 +9,6 @@
           "revision": "f8d0d573aebca3c85d1e2f53cfdd6fb7ac9b1586",
           "version": "1.0.0"
         }
-      },
-      {
-        "package": "WXApi",
-        "repositoryURL": "https://github.com/ze230123/WXApi.git",
-        "state": {
-          "branch": null,
-          "revision": "dfb8fb2456dadf2b4a70cbf05c78d855eb32e6b8",
-          "version": "1.0.1"
-        }
       }
     ]
   },
