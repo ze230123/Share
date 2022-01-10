@@ -17,9 +17,22 @@ enum ShareError: Error {
 }
 
 public class Share {
-    public static func registerApp(wxCongigure: WXConfiguration, qqAppId: String) {
-        WXApiManager.register(for: wxCongigure)
+    /// 单利
+    private static var shared: Share!
+    /// 小程序版本
+    private let miniType: WXApi.ProgramType
+
+    /// 初始化方法
+    /// - Parameters:
+    ///   - miniType: 小程序版本类型
+    private init(type: String) {
+        let miniType = WXApi.ProgramType.init(rawValue: type) ?? .release
+        self.miniType = miniType
+    }
+
+    public static func registerApp(wxCongigure: WXConfiguration, qqAppId: String, miniType: String) {        WXApiManager.register(for: wxCongigure)
         QQApi.register(for: qqAppId)
+        shared = Share(type: miniType)
     }
 
     public static func send(_ request: Share.Request, complation: ((ShareResult) -> Void)?) {
@@ -151,13 +164,13 @@ extension Share {
         /// 小程序版本
         var type: WXApi.ProgramType
 
-        public init(path: String, username: String, image: ShareImage, title: String, description: String, type: WXApi.ProgramType = .release) {
+        public init(path: String, username: String, image: ShareImage, title: String, description: String) {
             self.path = path
             self.username = username
             self.image = image
             self.title = title
             self.description = description
-            self.type = type
+            self.type = Share.shared.miniType
         }
     }
 
