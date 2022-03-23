@@ -7,13 +7,23 @@ public typealias WXApiManager = WXApi.WXApiManager
 
 public enum ShareResult {
     case success
-    case failure
+    case failure(Error)
 }
 
 enum ShareError: Error {
-    case cancel
     case failure
     case imageNil
+}
+
+extension ShareError: LocalizedError {
+    var errorDescription: String? {
+        switch self {
+        case .failure:
+            return "分享失败"
+        case .imageNil:
+            return "分享图片错误"
+        }
+    }
 }
 
 public class Share {
@@ -46,7 +56,7 @@ public class Share {
                     case .success:
                         complation?(.success)
                     case .failure:
-                        complation?(.failure)
+                        complation?(.failure(ShareError.failure))
                     }
                 }
             case .wxTimeline:
@@ -57,7 +67,7 @@ public class Share {
                         case .success:
                             complation?(.success)
                         case .failure:
-                            complation?(.failure)
+                            complation?(.failure(ShareError.failure))
                         }
                     }
             case .qqFriend:
@@ -68,7 +78,7 @@ public class Share {
                     case .success:
                         complation?(.success)
                     case .failure:
-                        complation?(.failure)
+                        complation?(.failure(ShareError.failure))
                     }
                 }
             case .qZone:
@@ -79,13 +89,17 @@ public class Share {
                     case .success:
                         complation?(.success)
                     case .failure:
-                        complation?(.failure)
+                        complation?(.failure(ShareError.failure))
                     }
                 }
             }
         } catch {
             debugPrint("分享 error", error.localizedDescription)
-            complation?(.failure)
+            guard let errors = error as? ShareError else {
+                complation?(.failure(ShareError.failure))
+                return
+            }
+            complation?(.failure(errors))
         }
     }
 
@@ -98,12 +112,16 @@ public class Share {
                 case .success:
                     complation?(.success)
                 case .failure:
-                    complation?(.failure)
+                    complation?(.failure(ShareError.failure))
                 }
             }
         } catch {
             debugPrint("分享小程序 error", error.localizedDescription)
-            complation?(.failure)
+            guard let errors = error as? ShareError else {
+                complation?(.failure(ShareError.failure))
+                return
+            }
+            complation?(.failure(errors))
         }
     }
 
@@ -199,7 +217,10 @@ extension ShareImage {
             }
             return image
         case .url(let string):
-            let data = try Data(contentsOf: URL(string: string)!)
+            guard let url = URL(string: string) else {
+                throw ShareError.imageNil
+            }
+            let data = try Data(contentsOf: url)
             guard let image = UIImage(data: data) else {
                 throw ShareError.imageNil
             }
