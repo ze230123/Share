@@ -40,16 +40,17 @@ public class Share {
         self.miniType = miniType
     }
 
-    public static func registerApp(wxCongigure: WXConfiguration, qqAppId: String, miniType: String) {        WXApiManager.register(for: wxCongigure)
+    public static func registerApp(wxCongigure: WXConfiguration, qqAppId: String, miniType: String) {
+        WXApiManager.register(for: wxCongigure)
         QQApi.register(for: qqAppId)
         shared = Share(type: miniType)
     }
 
     public static func send(_ request: Share.Request, complation: ((ShareResult) -> Void)?) {
         do {
+            let image = try request.image.asImage()
             switch request.platform {
             case .wxFriend:
-                let image = try request.image.asImage()
                 let request = WXApi.friendRequest(url: request.url, title: request.title, description: request.description, image: image)
                 WXApiManager.share(request) { result in
                     switch result {
@@ -60,7 +61,6 @@ public class Share {
                     }
                 }
             case .wxTimeline:
-                    let image = try request.image.asImage()
                     let request = WXApi.timelineRequest(url: request.url, title: request.title, description: request.description, image: image)
                     WXApiManager.share(request) { result in
                         switch result {
@@ -71,7 +71,6 @@ public class Share {
                         }
                     }
             case .qqFriend:
-                let image = try request.image.asImage()
                 let request = QQApi.shareRequest(url: request.url, title: request.title, description: request.description, imageData: image.pngData())
                 QQApi.shareQQ(req: request) { result in
                     switch result {
@@ -82,7 +81,6 @@ public class Share {
                     }
                 }
             case .qZone:
-                let image = try request.image.asImage()
                 let request = QQApi.shareRequest(url: request.url, title: request.title, description: request.description, imageData: image.pngData())
                 QQApi.shareQZone(req: request) { result in
                     switch result {
@@ -92,31 +90,19 @@ public class Share {
                         complation?(.failure(ShareError.failure))
                     }
                 }
-            }
-        } catch {
-            debugPrint("分享 error", error.localizedDescription)
-            guard let errors = error as? ShareError else {
-                complation?(.failure(ShareError.failure))
-                return
-            }
-            complation?(.failure(errors))
-        }
-    }
-
-    public static func send(_ request: Share.MiniProgramRequest, complation: ((ShareResult) -> Void)?) {
-        do {
-            let image = try request.image.asImage()
-            let req = WXApi.miniRequest(path: request.path, userName: request.username, title: request.title, description: request.description, image: image, type: request.type)
-            WXApiManager.share(req) { reuslt in
-                switch reuslt {
-                case .success:
-                    complation?(.success)
-                case .failure:
-                    complation?(.failure(ShareError.failure))
+            case .miniProgram:
+                let req = WXApi.miniRequest(path: request.url, userName: request.userName, title: request.title, description: request.description, image: image, type: shared.miniType)
+                WXApiManager.share(req) { reuslt in
+                    switch reuslt {
+                    case .success:
+                        complation?(.success)
+                    case .failure:
+                        complation?(.failure(ShareError.failure))
+                    }
                 }
             }
         } catch {
-            debugPrint("分享小程序 error", error.localizedDescription)
+            debugPrint("分享 error", error.localizedDescription)
             guard let errors = error as? ShareError else {
                 complation?(.failure(ShareError.failure))
                 return
@@ -143,9 +129,10 @@ extension Share {
         case wxTimeline
         case qqFriend
         case qZone
+        case miniProgram
     }
 
-    /// QQ、微信常规分享模型
+    /// QQ、微信、小程序分享模型
     public struct Request {
         var platform: Share.Platform
         /// 消息标题
@@ -156,39 +143,16 @@ extension Share {
         var url: String
         /// 缩略图
         var image: ShareImage
+        /// 小程序名、不分享小程序不用传
+        var userName: String?
 
-        public init(platform: Share.Platform, url: String, image: ShareImage, title: String, description: String) {
+        public init(platform: Share.Platform, url: String, image: ShareImage, title: String, description: String, userName: String?) {
             self.platform = platform
             self.url = url
             self.image = image
             self.title = title
             self.description = description
-        }
-    }
-
-    /// 微信小程序分享模型
-    public struct MiniProgramRequest {
-        /// 小程序的页面路径
-        var path: String
-        /// 小程序的userName
-        var username: String
-        /// 小程序新版本的预览图
-        var image: ShareImage
-        /// 消息标题
-        var title: String
-        /// 描述内容
-        var description: String
-
-        /// 小程序版本
-        var type: WXApi.ProgramType
-
-        public init(path: String, username: String, image: ShareImage, title: String, description: String) {
-            self.path = path
-            self.username = username
-            self.image = image
-            self.title = title
-            self.description = description
-            self.type = Share.shared.miniType
+            self.userName = userName
         }
     }
 
