@@ -131,7 +131,7 @@ extension Share {
         case qZone
         case miniProgram
 
-        var desc: String {
+        public var desc: String {
             switch self {
             case .wxFriend:
                 return "微信好友"
