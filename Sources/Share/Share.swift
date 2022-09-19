@@ -130,6 +130,21 @@ extension Share {
         case qqFriend
         case qZone
         case miniProgram
+
+        var desc: String {
+            switch self {
+            case .wxFriend:
+                return "微信好友"
+            case .wxTimeline:
+                return "微信朋友圈"
+            case .qqFriend:
+                return "QQ好友"
+            case .qZone:
+                return "QQ空间"
+            case .miniProgram:
+                return "微信小程序"
+            }
+        }
     }
 
     /// QQ、微信、小程序分享模型
@@ -146,7 +161,7 @@ extension Share {
         /// 小程序名、不分享小程序不用传
         var userName: String?
 
-        public init(platform: Share.Platform, url: String, image: ShareImage, title: String, description: String, userName: String?) {
+        public init(platform: Share.Platform, url: String, image: ShareImage, title: String, description: String, userName: String? = nil) {
             self.platform = platform
             self.url = url
             self.image = image
