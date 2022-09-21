@@ -13,6 +13,8 @@ public enum ShareResult {
 enum ShareError: Error {
     case failure
     case imageNil
+    case imageUrl
+    case imageLoad
 }
 
 extension ShareError: LocalizedError {
@@ -21,7 +23,11 @@ extension ShareError: LocalizedError {
         case .failure:
             return "分享失败"
         case .imageNil:
-            return "分享图片错误"
+            return "缺少分享图片"
+        case .imageUrl:
+            return "图片URL初始化失败"
+        case .imageLoad:
+            return "加载图片失败"
         }
     }
 }
@@ -196,12 +202,15 @@ extension ShareImage {
             }
             return image
         case .url(let string):
-            guard let url = URL(string: string) else {
+            guard let value = string.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
                 throw ShareError.imageNil
+            }
+            guard let url = URL(string: value) else {
+                throw ShareError.imageUrl
             }
             let data = try Data(contentsOf: url)
             guard let image = UIImage(data: data) else {
-                throw ShareError.imageNil
+                throw ShareError.imageLoad
             }
             return image
         }
