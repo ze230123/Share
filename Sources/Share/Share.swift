@@ -122,6 +122,43 @@ public class Share {
         WXApiManager.share(req, complation: nil)
     }
 
+    public static func sendImage(_ image: Data, platform: Share.Platform, complation: ((ShareResult) -> Void)?) {
+        switch platform {
+        case .wxFriend:
+            let req = WXApi.friendImageRequest(imageData: image)
+            WXApiManager.share(req) { reuslt in
+                switch reuslt {
+                case .success:
+                    complation?(.success)
+                case .failure:
+                    complation?(.failure(ShareError.failure))
+                }
+            }
+        case .wxTimeline:
+            let req = WXApi.timelineImageRequest(imageData: image)
+            WXApiManager.share(req) { reuslt in
+                switch reuslt {
+                case .success:
+                    complation?(.success)
+                case .failure:
+                    complation?(.failure(ShareError.failure))
+                }
+            }
+        case .qqFriend:
+            let request = QQApi.imageRequest(imageData: image)
+            QQApi.shareQQ(req: request) { result in
+                switch result {
+                case .success:
+                    complation?(.success)
+                case .failure:
+                    complation?(.failure(ShareError.failure))
+                }
+            }
+        default:
+            break
+        }
+    }
+
     public static func handleOpenURL(_ url: URL) -> Bool {
         _ = QQApi.handleOpen(url)
         _ = WXApiManager.handleOpen(url)
@@ -174,6 +211,15 @@ extension Share {
             self.title = title
             self.description = description
             self.userName = userName
+        }
+    }
+
+    /// 分享图片模型
+    public struct ImageRequest {
+        let imageData: Data
+
+        public init(imageData: Data) {
+            self.imageData = imageData
         }
     }
 

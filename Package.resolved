@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/ze230123/QQApi.git",
         "state": {
           "branch": null,
-          "revision": "f8d0d573aebca3c85d1e2f53cfdd6fb7ac9b1586",
-          "version": "1.0.0"
+          "revision": "310a611e65ca65db99b199e823e53e747016ecd0",
+          "version": "1.1.0"
         }
       },
       {
@@ -15,8 +15,8 @@
         "repositoryURL": "https://github.com/ze230123/WXApi.git",
         "state": {
           "branch": null,
-          "revision": "b0b1dc642b83745a92add17caef66f3c1c4ebf94",
-          "version": "1.0.5"
+          "revision": "c9f88b6d4ee8e885fc0e976e24d4b78156d554e0",
+          "version": "1.1.0"
         }
       }
     ]
