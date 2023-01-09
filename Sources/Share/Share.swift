@@ -2,6 +2,8 @@
 import UIKit
 import WXApi
 import QQApi
+import RxSwift
+import RxCocoa
 
 public typealias WXApiManager = WXApi.WXApiManager
 
@@ -53,68 +55,29 @@ public class Share {
     }
 
     public static func send(_ request: Share.Request, complation: ((ShareResult) -> Void)?) {
-        do {
-            let image = try request.image.asImage()
-            switch request.platform {
-            case .wxFriend:
-                let request = WXApi.friendRequest(url: request.url, title: request.title, description: request.description, image: image)
-                WXApiManager.share(request) { result in
-                    switch result {
-                    case .success:
-                        complation?(.success)
-                    case .failure:
-                        complation?(.failure(ShareError.failure))
-                    }
-                }
-            case .wxTimeline:
-                    let request = WXApi.timelineRequest(url: request.url, title: request.title, description: request.description, image: image)
-                    WXApiManager.share(request) { result in
-                        switch result {
-                        case .success:
-                            complation?(.success)
-                        case .failure:
-                            complation?(.failure(ShareError.failure))
-                        }
-                    }
-            case .qqFriend:
-                let request = QQApi.shareRequest(url: request.url, title: request.title, description: request.description, imageData: image.pngData())
-                QQApi.shareQQ(req: request) { result in
-                    switch result {
-                    case .success:
-                        complation?(.success)
-                    case .failure:
-                        complation?(.failure(ShareError.failure))
-                    }
-                }
-            case .qZone:
-                let request = QQApi.shareRequest(url: request.url, title: request.title, description: request.description, imageData: image.pngData())
-                QQApi.shareQZone(req: request) { result in
-                    switch result {
-                    case .success:
-                        complation?(.success)
-                    case .failure:
-                        complation?(.failure(ShareError.failure))
-                    }
-                }
-            case .miniProgram:
-                let req = WXApi.miniRequest(path: request.url, userName: request.userName, title: request.title, description: request.description, image: image, type: shared.miniType)
-                WXApiManager.share(req) { reuslt in
-                    switch reuslt {
-                    case .success:
-                        complation?(.success)
-                    case .failure:
-                        complation?(.failure(ShareError.failure))
-                    }
+        _ = request.image.asRxImage()
+            .flatMapLatest { image -> Observable<ShareResult> in
+                switch request.platform {
+                case .wxFriend:
+                    let request = WXApi.friendRequest(url: request.url, title: request.title, description: request.description, image: image)
+                    return WXApiManager.rxSend(request)
+                case .wxTimeline:
+                        let request = WXApi.timelineRequest(url: request.url, title: request.title, description: request.description, image: image)
+                    return WXApiManager.rxSend(request)
+                case .qqFriend:
+                    let request = QQApi.shareRequest(url: request.url, title: request.title, description: request.description, imageData: image.pngData())
+                    return QQApi.rxShareQQ(request)
+                case .qZone:
+                    let request = QQApi.shareRequest(url: request.url, title: request.title, description: request.description, imageData: image.pngData())
+                    return QQApi.rxShareQZone(request)
+                case .miniProgram:
+                    let req = WXApi.miniRequest(path: request.url, userName: request.userName, title: request.title, description: request.description, image: image, type: shared.miniType)
+                    return WXApiManager.rxSend(req)
                 }
             }
-        } catch {
-            debugPrint("分享 error", error.localizedDescription)
-            guard let errors = error as? ShareError else {
-                complation?(.failure(ShareError.failure))
-                return
+            .subscribe { result in
+                complation?(result)
             }
-            complation?(.failure(errors))
-        }
     }
 
     public static func send(_ request: Share.LaunchMiniRequest) {
@@ -163,6 +126,55 @@ public class Share {
         _ = QQApi.handleOpen(url)
         _ = WXApiManager.handleOpen(url)
         return true
+    }
+}
+
+extension WXApiManager {
+    static func rxSend(_ req: BaseReq) -> Observable<ShareResult> {
+        return Observable.create { observer in
+            WXApiManager.share(req) { result in
+                switch result {
+                case .success:
+                    observer.onNext(ShareResult.success)
+                case .failure:
+                    observer.onNext(ShareResult.failure(ShareError.failure))
+                }
+                observer.onCompleted()
+            }
+            return Disposables.create()
+        }
+    }
+}
+
+extension QQApi {
+    static func rxShareQQ(_ req: QQBaseReq) -> Observable<ShareResult> {
+        return Observable.create { observer in
+            QQApi.shareQQ(req: req) { result in
+                switch result {
+                case .success:
+                    observer.onNext(ShareResult.success)
+                case .failure:
+                    observer.onNext(ShareResult.failure(ShareError.failure))
+                }
+                observer.onCompleted()
+            }
+            return Disposables.create()
+        }
+    }
+
+    static func rxShareQZone(_ req: QQBaseReq) -> Observable<ShareResult> {
+        return Observable.create { observer in
+            QQApi.shareQZone(req: req) { result in
+                switch result {
+                case .success:
+                    observer.onNext(ShareResult.success)
+                case .failure:
+                    observer.onNext(ShareResult.failure(ShareError.failure))
+                }
+                observer.onCompleted()
+            }
+            return Disposables.create()
+        }
     }
 }
 
@@ -240,6 +252,35 @@ public enum ShareImage {
 }
 
 extension ShareImage {
+    func asRxImage() -> Observable<UIImage> {
+        switch self {
+        case .image(let optional):
+            return Observable.create { observer in
+                if let image = optional {
+                    observer.onNext(image)
+                    observer.onCompleted()
+                } else {
+                    observer.onError(ShareError.imageNil)
+                }
+                return Disposables.create()
+            }
+        case .url(let str):
+            guard let value = str.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed), let url = URL(string: value) else {
+                return .error(ShareError.imageUrl)
+            }
+
+            let request = URLRequest(url: url)
+            return URLSession.shared.rx
+                .response(request: request)
+                .map { result -> UIImage in
+                    guard let image = UIImage(data: result.data, scale: 1) else {
+                        throw ShareError.imageLoad
+                    }
+                    return  image
+                }
+        }
+    }
+
     func asImage() throws -> UIImage {
         switch self {
         case .image(let optional):
@@ -255,7 +296,7 @@ extension ShareImage {
                 throw ShareError.imageUrl
             }
             let data = try Data(contentsOf: url)
-            guard let image = UIImage(data: data) else {
+            guard let image = UIImage(data: data, scale: 1) else {
                 throw ShareError.imageLoad
             }
             return image

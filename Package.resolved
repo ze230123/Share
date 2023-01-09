@@ -6,8 +6,17 @@
         "repositoryURL": "https://github.com/ze230123/QQApi.git",
         "state": {
           "branch": null,
-          "revision": "310a611e65ca65db99b199e823e53e747016ecd0",
-          "version": "1.1.0"
+          "revision": "2716bc9ddf890a37c73ed7c9ff81f45f7a9ca800",
+          "version": "1.1.1"
+        }
+      },
+      {
+        "package": "RxSwift",
+        "repositoryURL": "https://github.com/ReactiveX/RxSwift.git",
+        "state": {
+          "branch": null,
+          "revision": "b4307ba0b6425c0ba4178e138799946c3da594f8",
+          "version": "6.5.0"
         }
       },
       {
@@ -15,8 +24,8 @@
         "repositoryURL": "https://github.com/ze230123/WXApi.git",
         "state": {
           "branch": null,
-          "revision": "99a7c606a3f070c46569cb11498db071124c04c0",
-          "version": "1.1.2"
+          "revision": "4f27a39a6183bef3f07670a2c9e3b91b205e0eb8",
+          "version": "1.1.3"
         }
       }
     ]
