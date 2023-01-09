@@ -56,27 +56,32 @@ public class Share {
 
     public static func send(_ request: Share.Request, complation: ((ShareResult) -> Void)?) {
         _ = request.image.asRxImage()
+            .debug("【Share】")
+            .observe(on: MainScheduler.instance)
             .flatMapLatest { image -> Observable<ShareResult> in
+                debugPrint(image.jpegData(compressionQuality: 1))
                 switch request.platform {
                 case .wxFriend:
-                    let request = WXApi.friendRequest(url: request.url, title: request.title, description: request.description, image: image)
-                    return WXApiManager.rxSend(request)
+                    let req = WXApi.friendRequest(url: request.url, title: request.title, description: request.description, image: image)
+                    return WXApiManager.rxSend(req)
                 case .wxTimeline:
-                        let request = WXApi.timelineRequest(url: request.url, title: request.title, description: request.description, image: image)
-                    return WXApiManager.rxSend(request)
+                        let req = WXApi.timelineRequest(url: request.url, title: request.title, description: request.description, image: image)
+                    return WXApiManager.rxSend(req)
                 case .qqFriend:
-                    let request = QQApi.shareRequest(url: request.url, title: request.title, description: request.description, imageData: image.pngData())
-                    return QQApi.rxShareQQ(request)
+                    let req = QQApi.shareRequest(url: request.url, title: request.title, description: request.description, imageData: image.pngData())
+                    return QQApi.rxShareQQ(req)
                 case .qZone:
-                    let request = QQApi.shareRequest(url: request.url, title: request.title, description: request.description, imageData: image.pngData())
-                    return QQApi.rxShareQZone(request)
+                    let req = QQApi.shareRequest(url: request.url, title: request.title, description: request.description, imageData: image.pngData())
+                    return QQApi.rxShareQZone(req)
                 case .miniProgram:
                     let req = WXApi.miniRequest(path: request.url, userName: request.userName, title: request.title, description: request.description, image: image, type: shared.miniType)
                     return WXApiManager.rxSend(req)
                 }
             }
             .subscribe { result in
-                complation?(result)
+                DispatchQueue.main.async {
+                    complation?(result)
+                }
             }
     }
 
@@ -273,33 +278,73 @@ extension ShareImage {
             return URLSession.shared.rx
                 .response(request: request)
                 .map { result -> UIImage in
-                    guard let image = UIImage(data: result.data, scale: 1) else {
+                    guard let image = UIImage(data: result.data) else {
                         throw ShareError.imageLoad
                     }
-                    return  image
+                    return ShareImage.compressImage(image, toByte: 1024 * 6)
                 }
         }
     }
 
-    func asImage() throws -> UIImage {
-        switch self {
-        case .image(let optional):
-            guard let image = optional else {
-                throw ShareError.imageNil
+    static func compressImage(_ image: UIImage, toByte maxLength: Int) -> UIImage {
+        var compression: CGFloat = 1
+        guard var data = image.jpegData(compressionQuality: compression),
+            data.count > maxLength else { return image }
+
+        // Compress by size
+        var max: CGFloat = 1
+        var min: CGFloat = 0
+        for _ in 0..<6 {
+            compression = (max + min) / 2
+            data = image.jpegData(compressionQuality: compression)!
+            if CGFloat(data.count) < CGFloat(maxLength) * 0.9 {
+                min = compression
+            } else if data.count > maxLength {
+                max = compression
+            } else {
+                break
             }
-            return image
-        case .url(let string):
-            guard let value = string.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                throw ShareError.imageNil
-            }
-            guard let url = URL(string: value) else {
-                throw ShareError.imageUrl
-            }
-            let data = try Data(contentsOf: url)
-            guard let image = UIImage(data: data, scale: 1) else {
-                throw ShareError.imageLoad
-            }
-            return image
         }
+        var resultImage: UIImage = UIImage(data: data)!
+        if data.count < maxLength {
+            return resultImage
+        }
+
+        // Compress by size
+        var lastDataLength: Int = 0
+        while data.count > maxLength, data.count != lastDataLength {
+            lastDataLength = data.count
+            let ratio: CGFloat = CGFloat(maxLength) / CGFloat(data.count)
+            let size: CGSize = CGSize(width: Int(resultImage.size.width * sqrt(ratio)),
+                                    height: Int(resultImage.size.height * sqrt(ratio)))
+            UIGraphicsBeginImageContext(size)
+            resultImage.draw(in: CGRect(x: 0, y: 0, width: size.width, height: size.height))
+            resultImage = UIGraphicsGetImageFromCurrentImageContext()!
+            UIGraphicsEndImageContext()
+            data = resultImage.jpegData(compressionQuality: compression)!
+        }
+        return resultImage
     }
+
+//    func asImage() throws -> UIImage {
+//        switch self {
+//        case .image(let optional):
+//            guard let image = optional else {
+//                throw ShareError.imageNil
+//            }
+//            return image
+//        case .url(let string):
+//            guard let value = string.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+//                throw ShareError.imageNil
+//            }
+//            guard let url = URL(string: value) else {
+//                throw ShareError.imageUrl
+//            }
+//            let data = try Data(contentsOf: url)
+//            guard let image = UIImage(data: data, scale: 1) else {
+//                throw ShareError.imageLoad
+//            }
+//            return image
+//        }
+//    }
 }

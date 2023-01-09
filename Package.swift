@@ -15,7 +15,7 @@ let package = Package(
     dependencies: [
         // Dependencies declare other packages that this package depends on.
          .package(url: "https://github.com/ze230123/QQApi.git", from: "1.1.1"),
-         .package(url: "https://github.com/ze230123/WXApi.git", from: "1.1.3"),
+         .package(url: "https://github.com/ze230123/WXApi.git", from: "1.1.5"),
          .package(url: "https://github.com/ReactiveX/RxSwift.git", from: "6.5.0"),
 //         .package(name: "WXApi", path: "/Users/youzy/Documents/lib_self/WXApi"),
 //         .package(name: "QQApi", path: "/Users/youzy01/Github/QQApi")
