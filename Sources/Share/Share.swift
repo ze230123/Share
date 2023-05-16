@@ -59,7 +59,6 @@ public class Share {
             .debug("【Share】")
             .observe(on: MainScheduler.instance)
             .flatMapLatest { image -> Observable<ShareResult> in
-                debugPrint(image.jpegData(compressionQuality: 1))
                 switch request.platform {
                 case .wxFriend:
                     let req = WXApi.friendRequest(url: request.url, title: request.title, description: request.description, image: image)
@@ -86,7 +85,7 @@ public class Share {
     }
 
     public static func send(_ request: Share.LaunchMiniRequest) {
-        let req = WXApi.launchMiniRequest(path: request.path, userName: request.username)
+        let req = WXApi.launchMiniRequest(path: request.path, userName: request.username, miniType: shared.miniType)
         WXApiManager.share(req, complation: nil)
     }
 
